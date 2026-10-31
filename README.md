@@ -1,1 +1,1 @@
-# aws-build-pipeline-practice
+# aws-bedrock-agent-build
