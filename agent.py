@@ -68,7 +68,6 @@ async def generate_text(request: MultiTurnRequest):
         
         # Parse the Nova response structure
         response_body = json.loads(response.get("body").read())
-        output_text = response_body["output"]["message"]["content"][0]["text"]
         
         # Extract content from Nova's response payload
         output_text = response_body["output"]["message"]["content"][0]["text"]
