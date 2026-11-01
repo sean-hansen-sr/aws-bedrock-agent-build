@@ -2,9 +2,8 @@ import os
 import boto3
 import json
 import uvicorn
+import external_variables as ext_vars
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import List, Dict, Any, Optional
 
 # Initialize FastAPI app
 app = FastAPI(title="Agent Gateway")
@@ -18,22 +17,8 @@ except Exception as e:
     print(f"Error initializing Bedrock client: {e}")
     bedrock_client = None
 
-# Individual message item format matching Amazon Nova's expected schema
-class MessageContent(BaseModel):
-    text: str
-
-class ChatMessage(BaseModel):
-    role: str  # Must alternatingly be "user" or "assistant"
-    content: List[MessageContent]
-
-# Request schema accepting the entire message thread history
-class MultiTurnRequest(BaseModel):
-    messages: List[ChatMessage]
-    max_tokens: int = 512
-    temperature: float = 0.7
-
 @app.post("/generate")
-async def generate_text(request: MultiTurnRequest):
+async def generate_text(request: ext_vars.MultiTurnRequest):
     if not bedrock_client:
         raise HTTPException(status_code=500, detail="AWS Bedrock client not initialized.")
 
