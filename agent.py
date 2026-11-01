@@ -1,69 +1,51 @@
 import os
-import boto3
-import json
 import uvicorn
 import external_variables as ext_vars
+from strands import Agent
+from strands.models import BedrockModel
 from fastapi import FastAPI, HTTPException
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Get environment variables for model configuration
+MODEL_ID = os.getenv("MODEL_ID")
+AWS_REGION = os.getenv("AWS_REGION")
 
 # Initialize FastAPI app
 app = FastAPI(title="Agent Gateway")
 
-try:
-    bedrock_client = boto3.client(
-        service_name="bedrock-runtime",
-        region_name=os.getenv("AWS_DEFAULT_REGION", "us-east-1")
-    )
-except Exception as e:
-    print(f"Error initializing Bedrock client: {e}")
-    bedrock_client = None
-
 @app.post("/generate")
 async def generate_text(request: ext_vars.MultiTurnRequest):
-    if not bedrock_client:
-        raise HTTPException(status_code=500, detail="AWS Bedrock client not initialized.")
-
-    # Target model set to Amazon Nova Lite
-    model_id = "us.amazon.nova-lite-v1:0"
-
-    # Map the FastAPI Pydantic models directly into Nova's expected dictionary payload format
-    formatted_messages = [
-        {
-            "role": msg.role,
-            "content": [{"text": item.text} for item in msg.content]
-        }
-        for msg in request.messages
-    ]
-
-    # Structure payload for Amazon Nova Converse API / Text generation
-    body = json.dumps({
-        "inferenceConfig": {
-            "maxTokens": request.max_tokens,
-            "temperature": request.temperature
-        },
-        "messages": formatted_messages
-    })
-
     try:
-        response = bedrock_client.invoke_model(
-            body=body,
-            modelId=model_id,
-            accept="application/json",
-            contentType="application/json"
+        # Initialize the Bedrock model wrapper
+        bedrock_model = BedrockModel(
+            model_id=MODEL_ID,
+            region_name=AWS_REGION,
+            temperature=request.temperature,
+            max_tokens=request.max_tokens
         )
         
-        # Parse the Nova response structure
-        response_body = json.loads(response.get("body").read())
+        # Instantiate the agent using the configured model
+        agent = Agent(model=bedrock_model)
         
-        # Extract content from Nova's response payload
-        output_text = response_body["output"]["message"]["content"][0]["text"]
+        # Map input into the expected state
+        agent.messages = [
+            {"role": msg.role, "content": [{"text": item.text} for item in msg.content]}
+            for msg in request.messages
+        ]
+
+        # Invoke the model
+        result = await agent.invoke_async()
         
         return {
             "role": "assistant",
-            "content": [{"text": output_text}]
+            "content": [{"text": str(result)}]
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Bedrock Nova invocation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Agent invocation failed: {str(e)}")
 
 @app.get("/health")
 async def health_check():
