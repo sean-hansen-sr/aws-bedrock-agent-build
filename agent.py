@@ -3,6 +3,8 @@ import uvicorn
 import external_variables as ext_vars
 from strands import Agent
 from strands.models import BedrockModel
+from strands.session import SnapshotSessionManager
+from strands_dynamodb_storage import DynamoDBStorage
 from fastapi import FastAPI, HTTPException
 from dotenv import load_dotenv
 
@@ -12,12 +14,19 @@ load_dotenv()
 # Get environment variables for model configuration
 MODEL_ID = os.getenv("MODEL_ID")
 AWS_REGION = os.getenv("AWS_REGION")
+AGENT_TABLE_NAME = os.getenv("AGENT_TABLE_NAME")
 
 # Initialize FastAPI app
 app = FastAPI(title="Agent Gateway")
 
+storage_backend = DynamoDBStorage(
+    table_name=AGENT_TABLE_NAME, 
+    region_name=AWS_REGION,
+    ttl_seconds=604800
+)
+
 @app.post("/generate")
-async def generate_text(request: ext_vars.MultiTurnRequest):
+async def generate_text(request: ext_vars.Request):
     try:
         # Initialize the Bedrock model wrapper
         bedrock_model = BedrockModel(
@@ -26,18 +35,22 @@ async def generate_text(request: ext_vars.MultiTurnRequest):
             temperature=request.temperature,
             max_tokens=request.max_tokens
         )
+
+        # Initialize the session manager with DynamoDB storage
+        session_manager = SnapshotSessionManager(
+            session_id=request.session_id, 
+            storage=storage_backend
+        )
         
         # Instantiate the agent using the configured model
-        agent = Agent(model=bedrock_model)
+        agent = Agent(
+            model=bedrock_model,
+            session_manager=session_manager,
+            system_prompt=request.system_prompt
+        )
         
-        # Map input into the expected state
-        agent.messages = [
-            {"role": msg.role, "content": [{"text": item.text} for item in msg.content]}
-            for msg in request.messages
-        ]
-
         # Invoke the model
-        result = await agent.invoke_async()
+        result = await agent.invoke_async(request.current_message)
         
         return {
             "role": "assistant",
