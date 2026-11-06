@@ -21,10 +21,11 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of your application code into the container
-COPY . /app
+COPY . .
 
 # Expose port 8080 to the outside world
 EXPOSE 8080
 
 # Run the FastAPI application when the container starts
-CMD ["python", "main.py"]
+#CMD ["python", "agent.py"]
+CMD ["uvicorn", "agent:app", "--host", "0.0.0.0"]
