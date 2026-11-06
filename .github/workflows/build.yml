@@ -36,9 +36,15 @@ jobs:
           TAG: ${{ secrets.DOCKER_TAG }}
           PUSH: ${{ secrets.DOCKER_PUSH }}
           APP_ENV: "development"
+          APP_AWS_REGION: ${{ secrets.REGION }}
+          APP_MODEL_ID: ${{ secrets.APP_MODEL_ID }}
+          APP_AGENT_TABLE_NAME: ${{ secrets.APP_AGENT_TABLE_NAME }}
         run: |
           docker build \
             --build-arg APP_ENV=$APP_ENV \
+            --build-arg APP_AWS_REGION=$APP_AWS_REGION \
+            --build-arg APP_MODEL_ID=$APP_MODEL_ID \
+            --build-arg APP_AGENT_TABLE_NAME=$APP_AGENT_TABLE_NAME \
             -t $BUILD .
           docker tag $TAG
           docker push $PUSH
