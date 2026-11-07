@@ -20,7 +20,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-
 RUN adduser --disabled-password --gecos "" appuser && \
     chown -R appuser:appuser /app
 
@@ -31,4 +30,4 @@ ENV PATH="/home/appuser/.local/bin:${PATH}"
 
 EXPOSE $PORT
 
-CMD ["python", "-m", "uvicorn", "agent:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["python3", "-m", "uvicorn", "agent:app", "--host", "0.0.0.0", "--port", "8080"]
