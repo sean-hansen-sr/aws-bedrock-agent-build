@@ -18,14 +18,17 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+COPY . .
+
+
 RUN adduser --disabled-password --gecos "" appuser && \
     chown -R appuser:appuser /app
 
-COPY . .
-
 USER appuser
+
+ENV PORT=8080
 ENV PATH="/home/appuser/.local/bin:${PATH}"
 
-EXPOSE 8080
+EXPOSE $PORT
 
 CMD ["python", "-m", "uvicorn", "agent:app", "--host", "0.0.0.0", "--port", "8080"]

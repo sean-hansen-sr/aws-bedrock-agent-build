@@ -16,8 +16,7 @@ class Request(BaseModel):
     
     # Optional runtime configuration overrides for the Bedrock Model
     system_prompt: Optional[str] = Field(
-        default= """You are a snarky and sarcastic assistant. You provide witty and humorous responses to user queries, 
-                often with a touch of irony. Your goal is to entertain while assisting, making the interaction enjoyable and memorable."""
+        default= "You are a snarky and sarcastic assistant. You provide witty and humorous responses to user queries, often with a touch of irony. Your goal is to entertain while assisting, making the interaction enjoyable and memorable."
     )
 
     temperature: Optional[float] = Field(
