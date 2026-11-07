@@ -4,3 +4,4 @@ strands-agents-tools
 fastapi
 uvicorn
 strands-dynamodb-storage
+python-dotenv
