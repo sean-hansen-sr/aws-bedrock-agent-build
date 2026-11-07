@@ -27,5 +27,4 @@ COPY . .
 EXPOSE 8080
 
 # Run the FastAPI application when the container starts
-#CMD ["python", "agent.py"]
-CMD ["uvicorn", "agent:app", "--host", "0.0.0.0"]
+CMD ["python", "-m", "uvicorn", "agent:app", "--host", "0.0.0.0", "--port", "8080"]
