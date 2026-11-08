@@ -1,0 +1,49 @@
+name: 'Build to AWS ECR'
+
+on: 
+  push:
+    branches:
+      - main
+  
+jobs:
+  build-and-push-ECR:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Code Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to AWS
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-access-key-id: ${{ secrets.ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.REGION }}
+    
+      - name: Login to AWS ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2  
+
+      - name: Build and Push Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_PUSH }}
+          build-args: |
+            APP_ENV=${{ secrets.APP_ENV }}
+            APP_AWS_REGION=${{ secrets.REGION }}
+            APP_MODEL_ID=${{ secrets.APP_MODEL_ID }}
+            APP_AGENT_TABLE_NAME=${{ secrets.APP_AGENT_TABLE_NAME }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
